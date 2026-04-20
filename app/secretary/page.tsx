@@ -48,11 +48,16 @@ export default async function SecretaryPage() {
             )}
           </p>
         </div>
-        {isSuperAdmin && (
-          <Link href="/admin" className="btn-secondary text-sm">
-            Manage Users
+        <div className="flex gap-2">
+          <Link href="/secretary/reports" className="btn-secondary text-sm">
+            📊 Reports
           </Link>
-        )}
+          {isSuperAdmin && (
+            <Link href="/admin" className="btn-secondary text-sm">
+              Manage Users
+            </Link>
+          )}
+        </div>
       </div>
 
       {parishes.map((parish) => (
