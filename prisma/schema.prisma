@@ -7,6 +7,25 @@ datasource db {
   provider = "sqlite"
 }
 
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole @default(SECRETARY)
+  parishId     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  parish Parish? @relation(fields: [parishId], references: [id])
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  PARISH_ADMIN
+  SECRETARY
+}
+
 model Parish {
   id        String   @id @default(cuid())
   name      String
@@ -20,43 +39,44 @@ model Parish {
   updatedAt DateTime @updatedAt
 
   masses Mass[]
+  users  User[]
 }
 
 model Mass {
-  id           String   @id @default(cuid())
-  parishId     String
-  scheduledAt  DateTime
-  description  String?  // e.g. "Sunday 9am Mass", "Daily Mass"
-  maxIntentions Int     @default(6)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default(cuid())
+  parishId      String
+  scheduledAt   DateTime
+  description   String?
+  maxIntentions Int      @default(6)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   parish     Parish          @relation(fields: [parishId], references: [id])
   intentions MassIntention[]
 }
 
 model MassIntention {
-  id               String            @id @default(cuid())
+  id               String        @id @default(cuid())
   massId           String
-  honoreeName      String            // Name of the person the Mass is offered for
+  honoreeName      String
   requesterName    String
   requesterEmail   String
   requesterPhone   String?
-  intentionType    IntentionType     @default(LIVING)
+  intentionType    IntentionType @default(LIVING)
   specialNote      String?
   paymentMethod    PaymentMethod
-  paymentStatus    PaymentStatus     @default(PENDING)
-  pllentyPaymentId String?           // Reference ID from Pllenty
-  amountCents      Int               @default(1000) // $10.00 in cents
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  paymentStatus    PaymentStatus @default(PENDING)
+  pllentyPaymentId String?
+  amountCents      Int           @default(1000)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   mass Mass @relation(fields: [massId], references: [id])
 }
 
 enum IntentionType {
-  LIVING    // For the living
-  DECEASED  // For the deceased (repose of soul)
+  LIVING
+  DECEASED
 }
 
 enum PaymentMethod {

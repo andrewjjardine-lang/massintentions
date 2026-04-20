@@ -1,26 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #faf9f7;
+  --foreground: #1c1917;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.font-serif {
+  font-family: 'Lora', Georgia, serif;
+}
+
+/* Form field base style */
+.field {
+  @apply w-full border border-stone-300 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-600 transition-colors placeholder:text-stone-400;
+}
+
+/* Primary button */
+.btn-primary {
+  @apply bg-amber-700 text-white font-medium rounded-lg px-5 py-2.5 text-sm hover:bg-amber-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+/* Secondary button */
+.btn-secondary {
+  @apply border border-stone-300 text-stone-700 font-medium rounded-lg px-5 py-2.5 text-sm hover:bg-stone-100 transition-colors;
+}
+
+/* Card */
+.card {
+  @apply bg-white border border-stone-200 rounded-xl shadow-sm;
 }

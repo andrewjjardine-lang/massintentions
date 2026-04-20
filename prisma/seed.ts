@@ -1,4 +1,5 @@
 import "dotenv/config";
+import bcrypt from "bcryptjs";
 import { PrismaClient } from "../app/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import path from "node:path";
@@ -82,6 +83,25 @@ async function main() {
 
   for (const mass of masses) {
     await prisma.mass.create({ data: mass });
+  }
+
+  // Create a default super admin if none exists
+  const adminExists = await prisma.user.findFirst({ where: { role: "SUPER_ADMIN" } });
+  if (!adminExists) {
+    const passwordHash = await bcrypt.hash("ChangeMe123!", 12);
+    await prisma.user.create({
+      data: {
+        name: "Site Administrator",
+        email: "admin@massintentions.local",
+        passwordHash,
+        role: "SUPER_ADMIN",
+        parishId: null,
+      },
+    });
+    console.log("\n⚠️  Default admin created:");
+    console.log("   Email:    admin@massintentions.local");
+    console.log("   Password: ChangeMe123!");
+    console.log("   → Change this password immediately after first login!\n");
   }
 
   console.log("Seed complete:", { parishes: 2, masses: masses.length });

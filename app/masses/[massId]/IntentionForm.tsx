@@ -9,6 +9,8 @@ interface Props {
   massDate: string;
   massTime: string;
   massDescription: string | null;
+  spotsLeft: number;
+  maxIntentions: number;
 }
 
 export default function IntentionForm({
@@ -17,6 +19,8 @@ export default function IntentionForm({
   massDate,
   massTime,
   massDescription,
+  spotsLeft,
+  maxIntentions,
 }: Props) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
@@ -49,128 +53,180 @@ export default function IntentionForm({
       });
 
       const data = await res.json();
-
       if (!res.ok) {
         setError(data.error ?? "Something went wrong. Please try again.");
         setSubmitting(false);
         return;
       }
 
-      const intentionId = data.id;
-
       if (form.paymentMethod === "PLLENTY") {
         const payRes = await fetch("/api/payment/pllenty", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ intentionId }),
+          body: JSON.stringify({ intentionId: data.id }),
         });
         const payData = await payRes.json();
-
         if (payData.checkoutUrl) {
           window.location.href = payData.checkoutUrl;
           return;
         }
       }
 
-      router.push(`/confirmation/${intentionId}`);
+      router.push(`/confirmation/${data.id}`);
     } catch {
       setError("A network error occurred. Please try again.");
       setSubmitting(false);
     }
   }
 
+  const spotsUsed = maxIntentions - spotsLeft;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Mass summary */}
-      <div className="bg-stone-100 rounded-xl px-5 py-4 text-sm text-stone-600 space-y-1">
-        <p className="font-medium text-stone-800">{parishName}</p>
-        <p>
+      {/* Mass summary card */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4">
+        <p className="font-serif font-medium text-stone-800 text-lg">{parishName}</p>
+        <p className="text-stone-600 text-sm mt-0.5">
           {massDate} at {massTime}
           {massDescription ? ` — ${massDescription}` : ""}
         </p>
-        <p className="font-semibold text-stone-800 mt-2">$10.00 per intention</p>
+        <div className="flex items-center gap-3 mt-3">
+          <div className="flex gap-1.5">
+            {Array.from({ length: maxIntentions }).map((_, i) => (
+              <div
+                key={i}
+                className={`w-2 h-2 rounded-full ${i < spotsUsed ? "bg-amber-600" : "bg-stone-300"}`}
+              />
+            ))}
+          </div>
+          <span className="text-xs text-stone-500">
+            {spotsLeft} of {maxIntentions} spots available
+          </span>
+          <span className="ml-auto font-semibold text-stone-800 text-sm">$10.00</span>
+        </div>
       </div>
 
-      {/* Honoree */}
-      <fieldset className="space-y-3">
-        <legend className="text-sm font-semibold text-stone-700">
-          Mass Intention — Who is this Mass offered for?
-        </legend>
-        <input
-          type="text"
-          required
-          placeholder="Full name"
-          value={form.honoreeName}
-          onChange={(e) => set("honoreeName", e.target.value)}
-          className="w-full border border-stone-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-stone-400"
-        />
+      {/* Honoree section */}
+      <div className="card p-6 space-y-4">
+        <div>
+          <h2 className="font-serif text-base font-semibold text-stone-800">Intention</h2>
+          <p className="text-xs text-stone-500 mt-0.5">Who is this Mass offered for?</p>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-stone-600 mb-1.5">
+            Name of the person
+          </label>
+          <input
+            type="text"
+            required
+            placeholder="Full name"
+            value={form.honoreeName}
+            onChange={(e) => set("honoreeName", e.target.value)}
+            className="field"
+          />
+        </div>
+
         <div className="flex gap-4">
           {(["LIVING", "DECEASED"] as const).map((type) => (
-            <label key={type} className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer">
+            <label
+              key={type}
+              className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer"
+            >
               <input
                 type="radio"
                 name="intentionType"
                 value={type}
                 checked={form.intentionType === type}
                 onChange={() => set("intentionType", type)}
-                className="accent-stone-700"
+                className="accent-amber-700"
               />
-              {type === "LIVING" ? "For the living" : "For the deceased"}
+              {type === "LIVING" ? "For the living" : "For the deceased (R.I.P.)"}
             </label>
           ))}
         </div>
-        <input
-          type="text"
-          placeholder="Special note (optional)"
-          value={form.specialNote}
-          onChange={(e) => set("specialNote", e.target.value)}
-          className="w-full border border-stone-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-stone-400"
-        />
-      </fieldset>
 
-      {/* Requester */}
-      <fieldset className="space-y-3">
-        <legend className="text-sm font-semibold text-stone-700">Your Contact Information</legend>
-        <input
-          type="text"
-          required
-          placeholder="Your full name"
-          value={form.requesterName}
-          onChange={(e) => set("requesterName", e.target.value)}
-          className="w-full border border-stone-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-stone-400"
-        />
-        <input
-          type="email"
-          required
-          placeholder="Email address"
-          value={form.requesterEmail}
-          onChange={(e) => set("requesterEmail", e.target.value)}
-          className="w-full border border-stone-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-stone-400"
-        />
-        <input
-          type="tel"
-          placeholder="Phone number (optional)"
-          value={form.requesterPhone}
-          onChange={(e) => set("requesterPhone", e.target.value)}
-          className="w-full border border-stone-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-stone-400"
-        />
-      </fieldset>
+        <div>
+          <label className="block text-xs font-medium text-stone-600 mb-1.5">
+            Special note <span className="text-stone-400 font-normal">(optional)</span>
+          </label>
+          <input
+            type="text"
+            placeholder="e.g. Birthday, Anniversary, Recently deceased…"
+            value={form.specialNote}
+            onChange={(e) => set("specialNote", e.target.value)}
+            className="field"
+          />
+        </div>
+      </div>
 
-      {/* Payment method */}
-      <fieldset className="space-y-3">
-        <legend className="text-sm font-semibold text-stone-700">Payment Method</legend>
+      {/* Requester section */}
+      <div className="card p-6 space-y-4">
+        <div>
+          <h2 className="font-serif text-base font-semibold text-stone-800">Your Information</h2>
+          <p className="text-xs text-stone-500 mt-0.5">
+            So the parish can confirm your request
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-stone-600 mb-1.5">Your full name</label>
+            <input
+              type="text"
+              required
+              placeholder="Jane Smith"
+              value={form.requesterName}
+              onChange={(e) => set("requesterName", e.target.value)}
+              className="field"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-stone-600 mb-1.5">Email address</label>
+            <input
+              type="email"
+              required
+              placeholder="jane@example.com"
+              value={form.requesterEmail}
+              onChange={(e) => set("requesterEmail", e.target.value)}
+              className="field"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-stone-600 mb-1.5">
+            Phone number <span className="text-stone-400 font-normal">(optional)</span>
+          </label>
+          <input
+            type="tel"
+            placeholder="(555) 000-0000"
+            value={form.requesterPhone}
+            onChange={(e) => set("requesterPhone", e.target.value)}
+            className="field sm:w-1/2"
+          />
+        </div>
+      </div>
+
+      {/* Payment section */}
+      <div className="card p-6 space-y-4">
+        <div>
+          <h2 className="font-serif text-base font-semibold text-stone-800">Payment</h2>
+          <p className="text-xs text-stone-500 mt-0.5">Choose how you&apos;ll pay $10</p>
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           {(
             [
-              { value: "PLLENTY", label: "Pay Online", sub: "via Pllenty" },
-              { value: "CASH", label: "Pay by Cash", sub: "at the parish office" },
+              { value: "PLLENTY", label: "Pay Online", sub: "Secure payment via Pllenty" },
+              { value: "CASH", label: "Pay by Cash", sub: "Bring $10 to the parish office" },
             ] as const
           ).map((opt) => (
             <label
               key={opt.value}
-              className={`flex flex-col border rounded-xl px-4 py-3 cursor-pointer transition-all ${
+              className={`flex flex-col border rounded-xl px-4 py-3.5 cursor-pointer transition-all ${
                 form.paymentMethod === opt.value
-                  ? "border-stone-700 bg-stone-50"
+                  ? "border-amber-600 bg-amber-50 ring-1 ring-amber-300"
                   : "border-stone-200 hover:border-stone-400"
               }`}
             >
@@ -183,34 +239,34 @@ export default function IntentionForm({
                 className="sr-only"
               />
               <span className="font-medium text-sm text-stone-800">{opt.label}</span>
-              <span className="text-xs text-stone-500">{opt.sub}</span>
+              <span className="text-xs text-stone-500 mt-0.5">{opt.sub}</span>
             </label>
           ))}
         </div>
+
         {form.paymentMethod === "CASH" && (
-          <p className="text-xs text-stone-500 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            Please bring $10 cash to the parish office to complete your request.
-            Your intention will be held for 3 business days pending payment.
-          </p>
+          <div className="flex gap-2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-900">
+            <span className="mt-0.5">ℹ️</span>
+            <span>
+              Your request will be held for <strong>3 business days</strong> pending cash
+              payment at the parish office.
+            </span>
+          </div>
         )}
-      </fieldset>
+      </div>
 
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
           {error}
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="w-full bg-stone-800 text-white py-3 rounded-xl font-medium hover:bg-stone-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
+      <button type="submit" disabled={submitting} className="btn-primary w-full py-3 text-base">
         {submitting
           ? "Submitting…"
           : form.paymentMethod === "PLLENTY"
-            ? "Submit & Pay Online"
-            : "Submit Request"}
+            ? "Submit & Pay Online →"
+            : "Submit Request →"}
       </button>
     </form>
   );

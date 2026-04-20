@@ -6,18 +6,11 @@ export const dynamic = "force-dynamic";
 
 function formatDate(d: Date) {
   return new Date(d).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
+    weekday: "long", month: "long", day: "numeric", year: "numeric",
   });
 }
-
 function formatTime(d: Date) {
-  return new Date(d).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return new Date(d).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
 export default async function ConfirmationPage({
@@ -26,79 +19,78 @@ export default async function ConfirmationPage({
   params: Promise<{ intentionId: string }>;
 }) {
   const { intentionId } = await params;
-
   const intention = await prisma.massIntention.findUnique({
     where: { id: intentionId },
     include: { mass: { include: { parish: true } } },
   });
-
   if (!intention) notFound();
 
-  const isPaid = intention.paymentStatus === "PAID";
   const isCash = intention.paymentMethod === "CASH";
+  const isPaid = intention.paymentStatus === "PAID";
 
   return (
-    <div className="max-w-lg mx-auto text-center space-y-6 py-8">
-      <div className="text-5xl">{isCash ? "📋" : "✅"}</div>
+    <div className="max-w-md mx-auto text-center space-y-6 py-8">
+      <div className="w-20 h-20 bg-amber-50 border-2 border-amber-300 rounded-full flex items-center justify-center text-4xl mx-auto shadow-sm">
+        {isCash ? "📋" : "✅"}
+      </div>
 
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold text-stone-800">
-          {isCash ? "Request Submitted" : "Intention Confirmed"}
+        <h1 className="font-serif text-2xl font-semibold text-stone-800">
+          {isCash ? "Request Received" : "Intention Confirmed"}
         </h1>
-        <p className="text-stone-500">
+        <p className="text-stone-500 text-[15px] leading-relaxed">
           {isCash
-            ? "Your Mass intention has been submitted. Please bring $10 cash to the parish office."
-            : "Your Mass intention and payment have been received. Thank you."}
+            ? "Your Mass intention has been submitted. Please bring $10 cash to the parish office within 3 business days to confirm your booking."
+            : "Your Mass intention and payment have been received. The parish secretary will include your intention in the Mass."}
         </p>
       </div>
 
-      <div className="bg-stone-50 border border-stone-200 rounded-xl px-6 py-5 text-left space-y-3 text-sm">
-        <div className="flex justify-between">
-          <span className="text-stone-500">Parish</span>
-          <span className="font-medium text-stone-800">{intention.mass.parish.name}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-stone-500">Mass</span>
-          <span className="font-medium text-stone-800">
-            {formatDate(intention.mass.scheduledAt)} at{" "}
-            {formatTime(intention.mass.scheduledAt)}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-stone-500">Intention offered for</span>
-          <span className="font-medium text-stone-800">{intention.honoreeName}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-stone-500">Type</span>
-          <span className="font-medium text-stone-800">
-            {intention.intentionType === "DECEASED" ? "For the Deceased" : "For the Living"}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-stone-500">Payment</span>
-          <span
-            className={`font-medium ${
-              isPaid ? "text-green-700" : isCash ? "text-amber-700" : "text-red-600"
-            }`}
-          >
-            {isPaid ? "Paid ($10.00)" : isCash ? "Cash due at office" : "Pending"}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-stone-500">Reference</span>
-          <span className="text-stone-400 font-mono text-xs">{intention.id}</span>
+      {/* Details card */}
+      <div className="card text-left divide-y divide-stone-100">
+        {[
+          { label: "Parish", value: intention.mass.parish.name },
+          {
+            label: "Mass",
+            value: `${formatDate(intention.mass.scheduledAt)} at ${formatTime(intention.mass.scheduledAt)}`,
+          },
+          { label: "Intention offered for", value: intention.honoreeName },
+          {
+            label: "Type",
+            value: intention.intentionType === "DECEASED" ? "For the Deceased (R.I.P.)" : "For the Living",
+          },
+          {
+            label: "Payment",
+            value: isPaid ? "Paid — $10.00" : isCash ? "Cash due at parish office" : "Pending",
+            highlight: isPaid ? "green" : isCash ? "amber" : undefined,
+          },
+        ].map((row) => (
+          <div key={row.label} className="flex justify-between items-start px-5 py-3.5 gap-4">
+            <span className="text-stone-500 text-sm shrink-0">{row.label}</span>
+            <span
+              className={`font-medium text-sm text-right ${
+                row.highlight === "green"
+                  ? "text-green-700"
+                  : row.highlight === "amber"
+                    ? "text-amber-700"
+                    : "text-stone-800"
+              }`}
+            >
+              {row.value}
+            </span>
+          </div>
+        ))}
+        <div className="flex justify-between items-center px-5 py-3.5">
+          <span className="text-stone-400 text-xs">Reference</span>
+          <span className="text-stone-300 font-mono text-xs">{intention.id}</span>
         </div>
       </div>
 
-      <p className="text-xs text-stone-400">
-        A confirmation has been recorded. The parish secretary will receive your intention
-        and include it in the Mass readings and parish bulletin.
+      <p className="text-xs text-stone-400 leading-relaxed">
+        The parish secretary has been notified. Your intention will be read aloud
+        during Mass and may be included in the parish bulletin.
       </p>
 
-      <Link
-        href="/"
-        className="inline-block bg-stone-800 text-white px-6 py-2.5 rounded-lg text-sm hover:bg-stone-700 transition-colors"
-      >
+      <Link href="/" className="btn-primary inline-block">
         Submit Another Intention
       </Link>
     </div>
