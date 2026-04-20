@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Parish {
+  id        String   @id @default(cuid())
+  name      String
+  address   String
+  city      String
+  state     String
+  phone     String?
+  email     String?
+  website   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  masses Mass[]
+}
+
+model Mass {
+  id           String   @id @default(cuid())
+  parishId     String
+  scheduledAt  DateTime
+  description  String?  // e.g. "Sunday 9am Mass", "Daily Mass"
+  maxIntentions Int     @default(6)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  parish     Parish          @relation(fields: [parishId], references: [id])
+  intentions MassIntention[]
+}
+
+model MassIntention {
+  id               String            @id @default(cuid())
+  massId           String
+  honoreeName      String            // Name of the person the Mass is offered for
+  requesterName    String
+  requesterEmail   String
+  requesterPhone   String?
+  intentionType    IntentionType     @default(LIVING)
+  specialNote      String?
+  paymentMethod    PaymentMethod
+  paymentStatus    PaymentStatus     @default(PENDING)
+  pllentyPaymentId String?           // Reference ID from Pllenty
+  amountCents      Int               @default(1000) // $10.00 in cents
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  mass Mass @relation(fields: [massId], references: [id])
+}
+
+enum IntentionType {
+  LIVING    // For the living
+  DECEASED  // For the deceased (repose of soul)
+}
+
+enum PaymentMethod {
+  CASH
+  PLLENTY
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
